@@ -1,0 +1,303 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cleaning Stock Order</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Stock Order">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: Arial, sans-serif;
+    background: #ffffff;
+    color: #000000;
+    padding: 16px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 2.2rem;
+    font-weight: bold;
+    text-align: center;
+    padding: 20px 0 4px 0;
+    color: #000;
+  }
+
+  .top-note {
+    text-align: center;
+    font-size: 1.3rem;
+    color: #444;
+    margin-bottom: 24px;
+  }
+
+  /* NAME INPUT - very large */
+  .name-label {
+    font-size: 1.6rem;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  input[type="text"] {
+    width: 100%;
+    padding: 22px;
+    font-size: 2rem;
+    border: 4px solid #000;
+    border-radius: 12px;
+    outline: none;
+    color: #000;
+    margin-bottom: 24px;
+  }
+
+  input[type="text"]:focus {
+    border-color: #003399;
+    background: #eef3ff;
+  }
+
+  /* ITEM ROWS - very tall, easy to tap */
+  .item-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 8px;
+    border-bottom: 3px solid #ccc;
+    gap: 8px;
+    min-height: 90px;
+  }
+
+  .item-row:last-child { border-bottom: none; }
+
+  .item-row.selected {
+    background: #dff0d8;
+    border-radius: 8px;
+    border-bottom: 3px solid #ccc;
+  }
+
+  .item-name {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #000;
+    flex: 1;
+    line-height: 1.3;
+  }
+
+  .qty-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  /* HUGE buttons - impossible to miss */
+  .qty-btn {
+    width: 72px;
+    height: 72px;
+    border-radius: 12px;
+    border: none;
+    font-size: 2.8rem;
+    font-weight: bold;
+    cursor: pointer;
+    color: #fff;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .qty-btn.minus { background: #cc0000; }
+  .qty-btn.plus  { background: #006600; }
+
+  .qty-display {
+    font-size: 2.2rem;
+    font-weight: bold;
+    color: #000;
+    min-width: 44px;
+    text-align: center;
+  }
+
+  /* SEND BUTTON - massive */
+  .send-btn {
+    display: block;
+    width: 100%;
+    padding: 30px 20px;
+    background: #003399;
+    color: #ffffff;
+    border: none;
+    border-radius: 16px;
+    font-size: 2.2rem;
+    font-weight: bold;
+    font-family: Arial, sans-serif;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    margin: 30px 0 10px 0;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    line-height: 1.4;
+  }
+
+  .send-btn.disabled {
+    background: #aaaaaa;
+    color: #eeeeee;
+    pointer-events: none;
+  }
+
+  .send-note {
+    text-align: center;
+    font-size: 1.2rem;
+    color: #555;
+    margin-bottom: 40px;
+  }
+
+  /* WARNING - very visible */
+  .warning {
+    background: #ffcccc;
+    border: 4px solid #cc0000;
+    border-radius: 12px;
+    padding: 20px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #cc0000;
+    margin-top: 16px;
+    text-align: center;
+    display: none;
+  }
+
+  .warning.show { display: block; }
+
+  /* DIVIDER */
+  .divider {
+    border: none;
+    border-top: 3px solid #000;
+    margin: 20px 0;
+  }
+
+  /* ITEMS LABEL */
+  .items-label {
+    font-size: 1.6rem;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 10px;
+  }
+</style>
+</head>
+<body>
+
+<h1>CLEANING STOCK ORDER</h1>
+<p class="top-note">Fill in and press SEND</p>
+
+<!-- NAME -->
+<label class="name-label" for="name">YOUR NAME</label>
+<input type="text" id="name" placeholder="Type your name" oninput="updateBtn()" autocomplete="given-name">
+
+<hr class="divider">
+
+<!-- ITEMS -->
+<span class="items-label">WHAT DO YOU NEED?</span>
+<div id="items-list"></div>
+
+<!-- WARNING -->
+<div class="warning" id="warning">
+  Please enter your name and choose at least one item!
+</div>
+
+<!-- SEND -->
+<a class="send-btn disabled" id="send-btn" href="#" onclick="return checkAndSend();">
+  SEND ORDER TO TOMASZ
+</a>
+<p class="send-note">This opens your email with the order already written.</p>
+
+<script>
+  const MANAGER_EMAIL = "tomasz.wierzbicki@jcdecaux.com";
+
+  const ITEMS = [
+    "Gloves M",
+    "Gloves L",
+    "Gloves XL",
+    "White rags",
+    "Microfibre cloth",
+    "Squeeze",
+    "Shampoo",
+    "Degreaser",
+    "Antibacterial gel",
+    "Green pads",
+    "Scraper (metal)",
+    "Scraper (plastic)",
+    "Weed brush (small)",
+    "Weed brush (long handle)",
+    "T-bar",
+    "T-bar cover",
+    "Graffiti remover",
+  ];
+
+  const qty = {};
+  ITEMS.forEach(i => qty[i] = 0);
+
+  function sid(n) { return n.replace(/[^a-zA-Z0-9]/g, "_"); }
+
+  function buildList() {
+    const list = document.getElementById("items-list");
+    ITEMS.forEach(item => {
+      const id = sid(item);
+      const row = document.createElement("div");
+      row.className = "item-row";
+      row.id = "row-" + id;
+      row.innerHTML =
+        '<div class="item-name">' + item + '</div>' +
+        '<div class="qty-controls">' +
+          '<button class="qty-btn minus" onclick="change(\'' + item + '\',-1)">-</button>' +
+          '<div class="qty-display" id="q-' + id + '">0</div>' +
+          '<button class="qty-btn plus" onclick="change(\'' + item + '\',1)">+</button>' +
+        '</div>';
+      list.appendChild(row);
+    });
+  }
+
+  function change(item, delta) {
+    qty[item] = Math.max(0, qty[item] + delta);
+    document.getElementById("q-" + sid(item)).textContent = qty[item];
+    document.getElementById("row-" + sid(item)).className = qty[item] > 0 ? "item-row selected" : "item-row";
+    updateBtn();
+  }
+
+  function updateBtn() {
+    const name = document.getElementById("name").value.trim();
+    const ordered = ITEMS.filter(i => qty[i] > 0);
+    const btn = document.getElementById("send-btn");
+    btn.className = (name && ordered.length > 0) ? "send-btn" : "send-btn disabled";
+    document.getElementById("warning").className = "warning";
+  }
+
+  function checkAndSend() {
+    const name = document.getElementById("name").value.trim();
+    const ordered = ITEMS.filter(i => qty[i] > 0);
+
+    if (!name || ordered.length === 0) {
+      document.getElementById("warning").className = "warning show";
+      window.scrollTo(0, document.body.scrollHeight);
+      return false;
+    }
+
+    let body = "CLEANING STOCK ORDER\n";
+    body += "From: " + name + "\n";
+    body += "Date: " + new Date().toLocaleDateString("en-GB") + "\n\n";
+    body += "Items needed:\n";
+    ordered.forEach(i => body += "- " + i + ": " + qty[i] + "\n");
+
+    const subject = "Cleaning Stock Order - " + name + " - " + new Date().toLocaleDateString("en-GB");
+    window.location.href = "mailto:" + MANAGER_EMAIL +
+      "?subject=" + encodeURIComponent(subject) +
+      "&body=" + encodeURIComponent(body);
+
+    return false;
+  }
+
+  buildList();
+</script>
+</body>
+</html>
+
